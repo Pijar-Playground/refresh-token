@@ -1,11 +1,12 @@
 const jwt = require("jsonwebtoken");
 const express = require("express");
+const cors = require("cors");
 const app = express();
 const port = 3000;
 
 const SECRET_KEY = "your random string secret key";
 const REFRESH_SECRET_KEY = "your random string secret key";
-const tokenList = []; // For storing your secret token
+let tokenList = []; // For storing your secret token
 
 // For validate token
 function verifyToken(req, res, next) {
@@ -38,6 +39,7 @@ function createToken(payload) {
   return { accessToken, refreshToken };
 }
 
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -66,6 +68,12 @@ app.post("/refresh-token", verifyToken, (req, res) => {
 
     // create token and send data from decode
     const token = createToken({ email: decoded.email });
+    const currentToken = tokenList.filter((res) => res !== authorization);
+
+    // remove old token
+    tokenList = currentToken;
+    // push refresh token to array
+    tokenList.push(token.refreshToken);
 
     res.json({
       auth: true,
@@ -82,7 +90,10 @@ app.post("/refresh-token", verifyToken, (req, res) => {
 
 // PRIVATE ROUTE
 app.get("/get-data", verifyToken, (req, res) => {
-  res.send("success get private data");
+  res.status(200).send({
+    auth: true,
+    message: "Success Get data",
+  });
 });
 
 app.listen(port, () => {
